@@ -1,0 +1,52 @@
+name: CBI Data Pipelines
+
+on:
+  schedule:
+    # Oil prices: Every 6 hours
+    - cron: '0 */6 * * *'
+    # Forex reserves: Every Monday 9 AM
+    - cron: '0 9 * * 1'
+  
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  oil-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests supabase
+      
+      - name: Run oil price pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+        run: python pipeline_oil_prices.py
+  
+  forex-reserves:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 9 * * 1'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 supabase
+      
+      - name: Run forex pipeline
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python pipeline_forex_reserves.py
